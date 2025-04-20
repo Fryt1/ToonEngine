@@ -1,0 +1,33 @@
+﻿#pragma once
+#include "ShadingModels.ush"
+
+
+float3 ToonStep(float feather, float halfLambert, float threshold = 0.5f)
+{
+	return smoothstep(threshold - feather, threshold + feather, halfLambert);
+}
+//实现Fresnel计算
+float Fresnel(float RimIntensity, float metallic, half3 N, half3 V)
+{
+	// 1. 计算法线与视线夹角的余弦值
+	float NdotV = saturate(dot(N, V));
+    
+	// 2. 基础菲涅尔计算（Schlick近似）
+	float fresnel = pow(1.0 - NdotV, RimIntensity); // 幂次控制边缘宽度[6,7](@ref)
+    
+	// 3. 金属材质调整（金属的菲涅尔效应更强烈）
+	float metallicFactor = lerp(1.0, 2.0, metallic); // 金属材质增强边缘强度[10](@ref)
+    
+	// 4. 综合边缘光强度参数
+	float result =  fresnel * metallicFactor;
+    
+	// 5. 非金属材质的基线调整（非金属需要基础反射率）
+	float dielectricF0 = 0.04; // 非金属基础反射率[10](@ref)
+	result = lerp(result * dielectricF0, result, metallic);
+    
+	return saturate(result);
+}
+
+
+
+
